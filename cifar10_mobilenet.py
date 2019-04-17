@@ -7,7 +7,7 @@ from __future__ import print_function
 import numpy as np
 np.random.seed(1337)  # for reproducibility
 
-from keras.datasets import mnist
+from keras.datasets import cifar10
 from keras.models import Sequential
 from keras.layers import Dense, Dropout, Activation, BatchNormalization, MaxPooling2D
 from keras.layers import Flatten
@@ -32,14 +32,18 @@ kernel_lr_multiplier = 'Glorot'
 # nn
 batch_size = 50
 epochs = 20
+channels = 3
 nb_channel = 1
-img_rows = 28
-img_cols = 28
+img_rows = 32
+img_cols = 32
 nb_filters = 32
+kernel_size = (3,3)
+mini_kernel_size = (1,1)
 nb_conv = 3
 nb_pool = 2
 nb_hid = 128
 nb_classes = 10
+classes = 10
 use_bias = False
 
 # learning rate schedule
@@ -56,10 +60,10 @@ p1 = 0.25
 p2 = 0.5
 
 # the data, shuffled and split between train and test sets
-(X_train, y_train), (X_test, y_test) = mnist.load_data()
+(X_train, y_train), (X_test, y_test) = cifar10.load_data()
 
-X_train = X_train.reshape(60000, 1, 28, 28)
-X_test = X_test.reshape(10000, 1, 28, 28)
+X_train = X_train.reshape(50000, 3, 32, 32)
+X_test = X_test.reshape(10000, 3, 32, 32)
 X_train = X_train.astype('float32')
 X_test = X_test.astype('float32')
 X_train /= 255
