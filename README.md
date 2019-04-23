@@ -1,6 +1,7 @@
 Ternary Recurrent Networks for Keras.
 
 ## run
+Please contact cyan@psu.edu if you need the trained models.
 ### MLP
 python mnist_mlp.py
 
