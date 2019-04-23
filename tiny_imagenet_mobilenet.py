@@ -19,8 +19,10 @@ import keras.backend as K
 K.set_image_data_format('channels_first')
 
 from ternary_ops import ternarize
-from ternary_layers import TernaryDense, TernaryConv2D, Clip
+from ternary_layers import TernaryDense, TernaryConv2D
 
+#Custom
+from load_images import load_images
 
 def ternary_tanh(x):
     x = K.clip(x, -1, 1)
@@ -30,8 +32,8 @@ H = 1.
 kernel_lr_multiplier = 'Glorot'
 
 # nn
-batch_size = 50
-epochs = 20
+batch_size = 32
+epochs = 30
 channels = 3
 nb_channel = 1
 img_rows = 32
@@ -40,11 +42,42 @@ nb_filters = 32
 kernel_size = (3,3)
 mini_kernel_size = (1,1)
 nb_conv = 3
-nb_pool = 2
+pool_size = 2
 nb_hid = 128
-nb_classes = 10
-classes = 10
+nb_classes = 200
+#classes = 200
 use_bias = False
+
+#####################
+## imagenet params ##
+num_classes = 200
+batch_size = 32
+nb_epoch = 30
+
+#Load images
+path= '../dataset/tiny-imagenet-200'
+X_train,y_train,X_test,y_test=load_images(path,num_classes)
+
+print('X_train shape:', X_train.shape)
+print(X_train.shape[0], 'train samples')
+print(X_test.shape[0], 'test samples')
+
+num_samples=len(X_train)
+
+# input image dimensions
+num_channels , img_rows, img_cols = X_train.shape[1], X_train.shape[2], X_train.shape[3]
+
+X_train = X_train.astype('float32')
+X_test = X_test.astype('float32')
+X_train /= 255
+X_test /= 255
+
+# convert class vectors to binary class matrices
+#Y_train = np_utils.to_categorical(y_train, num_classes)
+#Y_test = np_utils.to_categorical(y_test, num_classes)
+
+#####################
+
 
 # learning rate schedule
 lr_start = 1e-3
@@ -59,11 +92,9 @@ momentum = 0.9
 p1 = 0.25
 p2 = 0.5
 
-# the data, shuffled and split between train and test sets
-(X_train, y_train), (X_test, y_test) = cifar10.load_data()
 
-X_train = X_train.reshape(50000, 3, 32, 32)
-X_test = X_test.reshape(10000, 3, 32, 32)
+X_train = X_train.reshape(100000, 3, 64, 64)
+X_test = X_test.reshape(10000, 3, 64, 64)
 X_train = X_train.astype('float32')
 X_test = X_test.astype('float32')
 X_train /= 255
@@ -79,7 +110,7 @@ Y_test = np_utils.to_categorical(y_test, nb_classes) * 2 - 1
 model = Sequential()
 # conv1
 model.add(TernaryConv2D(32, kernel_size=kernel_size, input_shape=(channels, img_rows, img_cols),
-                       data_format='channels_first',
+                       data_format='channels_first', strides=2,
                        H=H, kernel_lr_multiplier=kernel_lr_multiplier,
                        padding='same', use_bias=use_bias, name='conv1'))
 model.add(BatchNormalization(epsilon=epsilon, momentum=momentum, axis=1, name='bn1'))
@@ -202,7 +233,6 @@ model.add(TernaryConv2D(512, kernel_size=mini_kernel_size, H=H, kernel_lr_multip
 model.add(BatchNormalization(epsilon=epsilon, momentum=momentum, axis=1, name='conv_1x1_bn_5_2'))
 model.add(Activation(ternary_tanh, name='conv_1x1_act_5_2'))
 
-'''
 # conv_dw_5_3
 model.add(TernaryConv2D(512, kernel_size=kernel_size, H=H, kernel_lr_multiplier=kernel_lr_multiplier,
                        data_format='channels_first',
@@ -244,13 +274,6 @@ model.add(TernaryConv2D(512, kernel_size=mini_kernel_size, H=H, kernel_lr_multip
                        padding='same', use_bias=use_bias, name='conv_1x1_5_5'))
 model.add(BatchNormalization(epsilon=epsilon, momentum=momentum, axis=1, name='conv_1x1_bn_5_5'))
 model.add(Activation(ternary_tanh, name='conv_1x1_act_5_5'))
-'''
-
-'''
-V1. Comment # conv_dw_5_3 to # conv_1x1_5_5 Test Accuracy:
-Removed the above lines to make the network smaller for the cifar 10 dataset.
-Given the netowrk operates on +-1 weights and activations, deeper network caused vanishing gradient problem. (I think)
-'''
 ##############################################################################################################
 
 # conv_dw_6_1
@@ -283,7 +306,7 @@ model.add(BatchNormalization(epsilon=epsilon, momentum=momentum, axis=1, name='c
 model.add(Activation(ternary_tanh, name='conv_1x1_act_7_2'))
 ##############################################################################################################
 
-#model.add(MaxPooling2D(pool_size=pool_size, name='pool7', data_format='channels_first'))
+model.add(MaxPooling2D(pool_size=pool_size, name='pool2', data_format='channels_first'))
 model.add(Flatten())
 
 ##############################################################################################################
@@ -292,7 +315,7 @@ model.add(TernaryDense(1024, H=H, kernel_lr_multiplier=kernel_lr_multiplier, use
 model.add(BatchNormalization(epsilon=epsilon, momentum=momentum, name='bn5'))
 model.add(Activation(ternary_tanh, name='act5'))
 # dense2
-model.add(TernaryDense(classes, H=H, kernel_lr_multiplier=kernel_lr_multiplier, use_bias=use_bias, name='dense6'))
+model.add(TernaryDense(nb_classes, H=H, kernel_lr_multiplier=kernel_lr_multiplier, use_bias=use_bias, name='dense6'))
 model.add(BatchNormalization(epsilon=epsilon, momentum=momentum, name='bn6'))
 ##############################################################################################################
 
@@ -306,6 +329,7 @@ history = model.fit(X_train, Y_train,
                     verbose=1, validation_data=(X_test, Y_test),
                     callbacks=[lr_scheduler])
 score = model.evaluate(X_test, Y_test, verbose=0)
-model.save('cifar10_ter_mini_mobilenet.h5')
+model.save('tiny_ILSVRC_ter_mobilenet.h5')
 print('Test score:', score[0])
 print('Test accuracy:', score[1])
+
