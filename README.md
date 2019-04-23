@@ -1,7 +1,7 @@
 Ternary Recurrent Networks for Keras.
 
 ## run
-Please contact cyan@psu.edu if you need the trained models.
+Please contact cyan@psu.edu if you need the trained models. Include [TernaryMobileNet] as a keyword in your mail
 ### MLP
 python mnist_mlp.py
 
